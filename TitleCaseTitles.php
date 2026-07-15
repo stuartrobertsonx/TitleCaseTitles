@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Title Case Titles
-Version:     1.0
+Version:     1.1
 Description: Forces all titles and headings to display in Title Case
 Author:      Stuart Robertson
 Requires at least: 5.8
@@ -66,6 +66,12 @@ function tct_title_case($title) {
                 $clean  = $matches[2];
                 $suffix = $matches[3];
 
+                // Preserve acronyms
+                if (tct_is_acronym($clean)) {
+                    $subword = $prefix . $clean . $suffix;
+                    continue;
+                }
+
                 $clean_lower = mb_strtolower($clean, 'UTF-8');
 
                 if (
@@ -107,6 +113,11 @@ function tct_should_apply($post_id) {
     }
 
     return in_array($post_type, ['post', 'page'], true);
+}
+
+// Check if text is an acronym (all caps, at least 2 letters)
+function tct_is_acronym($word) {
+    return preg_match('/^[A-Z0-9]{2,}$/u', $word);
 }
 
 // Apply Title Case to titles
