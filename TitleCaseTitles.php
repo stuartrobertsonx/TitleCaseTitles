@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Title Case Titles
-Version:     1.1
+Version:     1.2
 Description: Forces all titles and headings to display in Title Case
 Author:      Stuart Robertson
 Requires at least: 5.8
@@ -36,8 +36,7 @@ function tct_title_case($title) {
     foreach ($parts as &$part) {
         // Handle HTML tags separately
         if (preg_match('/^<[^>]+>$/', $part)) {
-            $part = mb_strtolower($part, 'UTF-8');
-            continue;
+            continue; // don't alter HTML tags or attributes
         }
 
         // Split into words
