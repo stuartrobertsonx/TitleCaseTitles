@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Title Case Titles
-Version:     1.2
+Version:     1.3
 Description: Forces all titles and headings to display in Title Case
 Author:      Stuart Robertson
 Requires at least: 5.8
