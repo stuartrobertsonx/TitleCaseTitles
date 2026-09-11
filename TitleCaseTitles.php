@@ -49,6 +49,12 @@ function tct_title_case($title) {
 
             foreach ($hyphen_parts as &$subword) {
 
+                // Preserve dotted acronyms (e.g., U.S.A., U.K., U.S., Ph.D.)
+                if (tct_is_dotted_acronym($subword)) {
+                    $subword = mb_strtoupper($subword, 'UTF-8');
+                    continue;
+                }
+
                 $word_pattern = '/^([^\p{L}\p{N}]*)([\p{L}\p{N}]+)([^\p{L}\p{N}]*)$/u';
                 preg_match($word_pattern, $subword, $matches);
 
@@ -64,13 +70,6 @@ function tct_title_case($title) {
                 $prefix = $matches[1];
                 $clean  = $matches[2];
                 $suffix = $matches[3];
-
-                // Preserve dotted acronyms (e.g., U.S.A., U.K., U.S., Ph.D.)
-                if (tct_is_dotted_acronym($subword)) {
-                    // Keep as-is, don't modify case
-                    $subword = mb_strtoupper($subword, 'UTF-8');
-                    continue;
-                }
 
                 // Preserve acronyms
                 if (tct_is_acronym($clean)) {
@@ -110,9 +109,9 @@ function tct_title_case($title) {
 
 // Check if text is a dotted acronym (e.g., U.S.A., U.K., U.S., Ph.D.)
 function tct_is_dotted_acronym($word) {
-    // Pattern: Single letter followed by dot, repeated at least once
+    // Pattern: Single letter followed by dot, repeated at least once, with optional trailing dot
     // Matches: U.S., U.S.A., Ph.D., etc.
-    return preg_match('/^[A-Z]\.[A-Z]\.+$/u', $word);
+    return preg_match('/^[A-Z]\.(?:[A-Z]\.)+$/u', $word);
 }
 
 // Check if text is an acronym (all caps, at least 2 letters)
