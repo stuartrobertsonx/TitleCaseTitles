@@ -17,9 +17,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Strip HTML tags to ensure plain text output
-$title = wp_strip_all_tags($title);
-
 // Convert string to Title Case
 function tct_title_case($title) {
     // Skip very long titles to prevent ReDoS attacks
@@ -27,92 +24,74 @@ function tct_title_case($title) {
         return $title;
     }
 
+    // Strip HTML tags to ensure plain text output
+    $title = wp_strip_all_tags($title);
+
     // Words to exclude from capitalization unless first/last
     $small_words = [
         'a','an','and','as','at','but','by','for','if','in','nor',
         'of','on','or','per','so','the','to','th','up','yet'
     ];
-    
-    // Decode HTML entities (e.g., &nbsp;)
-    $title = html_entity_decode($title, ENT_QUOTES, 'UTF-8');
 
-    // Split into tags and text
-    $parts = preg_split('/(<[^>]+>)/u', $title, -1, PREG_SPLIT_DELIM_CAPTURE);
+    // Split into words
+    $words = preg_split('/\s+/u', $title, -1, PREG_SPLIT_NO_EMPTY);
 
     $word_index = 0;
 
-    foreach ($parts as &$part) {
-        // Handle HTML tags separately
-        if (preg_match('/^<[^>]+>$/', $part)) {
-            continue; // don't alter HTML tags or attributes
-        }
+    foreach ($words as &$word) {
+        // Split hyphenated words
+        $hyphen_parts = explode('-', $word);
 
-        // Split into words
-        $words = preg_split('/\s+/u', $part, -1, PREG_SPLIT_NO_EMPTY);
-
-        foreach ($words as &$word) {
-
-            // Split hyphenated words
-            $hyphen_parts = explode('-', $word);
-
-            foreach ($hyphen_parts as &$subword) {
-
-                // Preserve dotted acronyms (e.g., U.S.A., U.K., U.S., Ph.D.)
-                if (tct_is_dotted_acronym($subword)) {
-                    $subword = mb_strtoupper($subword, 'UTF-8');
-                    continue;
-                }
-
-                $word_pattern = '/^([^\p{L}\p{N}]*)([\p{L}\p{N}]+)([^\p{L}\p{N}]*)$/u';
-                preg_match($word_pattern, $subword, $matches);
-
-                if (!$matches) {
-                    $subword = mb_convert_case(
-                        mb_strtolower($subword, 'UTF-8'),
-                        MB_CASE_TITLE,
-                        'UTF-8'
-                    );
-                    continue;
-                }
-
-                $prefix = $matches[1];
-                $clean  = $matches[2];
-                $suffix = $matches[3];
-
-                // Preserve acronyms
-                if (tct_is_acronym($clean)) {
-                    $subword = $prefix . $clean . $suffix;
-                    continue;
-                }
-
-                $clean_lower = mb_strtolower($clean, 'UTF-8');
-
-                if (
-                    $word_index === 0 || 
-                    !in_array($clean_lower, $small_words, true)
-                ) {
-                    $clean = mb_convert_case($clean_lower, MB_CASE_TITLE, 'UTF-8');
-                } else {
-                    $clean = $clean_lower;
-                }
-
-                $subword = $prefix . $clean . $suffix;
+        foreach ($hyphen_parts as &$subword) {
+            // Preserve dotted acronyms (e.g., U.S.A., U.K., U.S., Ph.D.)
+            if (tct_is_dotted_acronym($subword)) {
+                $subword = mb_strtoupper($subword, 'UTF-8');
+                continue;
             }
 
-            // Rebuild hyphenated word
-            $word = implode('-', $hyphen_parts);
+            $word_pattern = '/^([^\p{L}\p{N}]*)([\p{L}\p{N}]+)([^\p{L}\p{N}]*)$/u';
+            preg_match($word_pattern, $subword, $matches);
 
-            $word_index++;
+            if (!$matches) {
+                $subword = mb_convert_case(
+                    mb_strtolower($subword, 'UTF-8'),
+                    MB_CASE_TITLE,
+                    'UTF-8'
+                );
+                continue;
+            }
+
+            $prefix = $matches[1];
+            $clean  = $matches[2];
+            $suffix = $matches[3];
+
+            // Preserve acronyms
+            if (tct_is_acronym($clean)) {
+                $subword = $prefix . $clean . $suffix;
+                continue;
+            }
+
+            $clean_lower = mb_strtolower($clean, 'UTF-8');
+
+            if (
+                $word_index === 0 || 
+                !in_array($clean_lower, $small_words, true)
+            ) {
+                $clean = mb_convert_case($clean_lower, MB_CASE_TITLE, 'UTF-8');
+            } else {
+                $clean = $clean_lower;
+            }
+
+            $subword = $prefix . $clean . $suffix;
         }
 
-        $part = implode(' ', $words);
+        // Rebuild hyphenated word
+        $word = implode('-', $hyphen_parts);
+
+        $word_index++;
     }
 
-    return wp_strip_all_tags(preg_replace(
-        '/(<\/[^>]+>)(?=\S)/u',
-        '$1 ',
-        implode('', $parts)
-    ));
+    return implode(' ', $words);
 }
 
 // Check if text is a dotted acronym (e.g., U.S.A., U.K., U.S., Ph.D.)
@@ -153,7 +132,7 @@ function tct_should_apply($post_id) {
 function tct_filter_headings($content) {
     global $post;
 
-    if (!$post || !tct_should_apply($post->ID)) {
+    if (!$post || !isset($post->ID) || !tct_should_apply($post->ID)) {
         return $content;
     }
 
@@ -167,7 +146,7 @@ function tct_filter_headings($content) {
             // Convert only visible text
             $converted = tct_title_case($inner);
 
-            return "<{$tag}{$attrs}>{$converted}</{$tag}>";
+            return "<{$tag}{$attrs}>" . esc_html($converted) . "</{$tag}>";
         },
         $content
     );
@@ -175,7 +154,6 @@ function tct_filter_headings($content) {
     $content = preg_replace_callback(
         '/(<a[^>]*class="[^"]*wp-block-button__link[^"]*"[^>]*>)(.*?)(<\/a>)/is',
         function ($matches) {
-
             $open  = $matches[1];
             $inner = $matches[2];
             $close = $matches[3];
@@ -184,7 +162,7 @@ function tct_filter_headings($content) {
             $inner = preg_replace_callback(
                 '/>([^<]+)</u',
                 function ($text_match) {
-                    return '>' . tct_title_case($text_match[1]) . '<';
+                    return '>' . esc_html(tct_title_case($text_match[1])) . '<';
                 },
                 '>' . $inner . '<'
             );
@@ -197,11 +175,9 @@ function tct_filter_headings($content) {
         $content
     );
 
-
     $content = preg_replace_callback(
-    '/(<li[^>]*class="[^"]*child-page[^"]*"[^>]*>.*?<a[^>]*>)(.*?)(<\/a>)/is',
+        '/(<li[^>]*class="[^"]*child-page[^"]*"[^>]*>.*?<a[^>]*>)(.*?)(<\/a>)/is',
         function ($matches) {
-
             $open  = $matches[1]; // <li ...><a ...>
             $inner = $matches[2]; // link text
             $close = $matches[3]; // </a>
@@ -210,7 +186,7 @@ function tct_filter_headings($content) {
             $inner = preg_replace_callback(
                 '/>([^<]+)</u',
                 function ($text_match) {
-                    return '>' . tct_title_case($text_match[1]) . '<';
+                    return '>' . esc_html(tct_title_case($text_match[1])) . '<';
                 },
                 '>' . $inner . '<'
             );
