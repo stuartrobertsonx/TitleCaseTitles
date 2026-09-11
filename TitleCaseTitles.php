@@ -219,7 +219,9 @@ function tct_filter_headings($content) {
 
 // Register settings
 function tct_register_settings() {
-    register_setting('tct_settings_group', 'tct_apply_to');
+    register_setting('tct_settings_group', 'tct_apply_to', [
+        'sanitize_callback' => 'sanitize_text_field'
+    ]);
 
     add_settings_section(
         'tct_main_section',
