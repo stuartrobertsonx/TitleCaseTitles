@@ -17,6 +17,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Strip HTML tags to ensure plain text output
+$title = wp_strip_all_tags($title);
+
 // Convert string to Title Case
 function tct_title_case($title) {
     // Skip very long titles to prevent ReDoS attacks
@@ -105,11 +108,11 @@ function tct_title_case($title) {
         $part = implode(' ', $words);
     }
 
-    return preg_replace(
+    return wp_strip_all_tags(preg_replace(
         '/(<\/[^>]+>)(?=\S)/u',
         '$1 ',
         implode('', $parts)
-    );
+    ));
 }
 
 // Check if text is a dotted acronym (e.g., U.S.A., U.K., U.S., Ph.D.)
