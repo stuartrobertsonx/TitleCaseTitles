@@ -19,6 +19,11 @@ if (!defined('ABSPATH')) {
 
 // Convert string to Title Case
 function tct_title_case($title) {
+    // Skip very long titles to prevent ReDoS attacks
+    if (strlen($title) > 10000) {
+        return $title;
+    }
+
     // Words to exclude from capitalization unless first/last
     $small_words = [
         'a','an','and','as','at','but','by','for','if','in','nor',
