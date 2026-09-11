@@ -65,7 +65,7 @@ function tct_title_case($title) {
                 $clean  = $matches[2];
                 $suffix = $matches[3];
 
-                // Preserve dotted acronyms (e.g., U.S.A., U.K., Ph.D.)
+                // Preserve dotted acronyms (e.g., U.S.A., U.K., U.S., Ph.D.)
                 if (tct_is_dotted_acronym($subword)) {
                     // Keep as-is, don't modify case
                     $subword = mb_strtoupper($subword, 'UTF-8');
@@ -108,11 +108,11 @@ function tct_title_case($title) {
     );
 }
 
-// Check if text is a dotted acronym (e.g., U.S.A., U.K., Ph.D.)
+// Check if text is a dotted acronym (e.g., U.S.A., U.K., U.S., Ph.D.)
 function tct_is_dotted_acronym($word) {
-    // Pattern: Letter dot, repeated 2+ times, optionally ending with a letter or dot
-    // Matches: U.S.A., U.K., Ph.D., etc.
-    return preg_match('/^[A-Z]\.(?:[A-Z]\.)+$/u', $word);
+    // Pattern: Single letter followed by dot, repeated at least once
+    // Matches: U.S., U.S.A., Ph.D., etc.
+    return preg_match('/^[A-Z]\.[A-Z]\.+$/u', $word);
 }
 
 // Check if text is an acronym (all caps, at least 2 letters)
