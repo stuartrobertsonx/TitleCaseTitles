@@ -65,6 +65,13 @@ function tct_title_case($title) {
                 $clean  = $matches[2];
                 $suffix = $matches[3];
 
+                // Preserve dotted acronyms (e.g., U.S.A., U.K., Ph.D.)
+                if (tct_is_dotted_acronym($subword)) {
+                    // Keep as-is, don't modify case
+                    $subword = mb_strtoupper($subword, 'UTF-8');
+                    continue;
+                }
+
                 // Preserve acronyms
                 if (tct_is_acronym($clean)) {
                     $subword = $prefix . $clean . $suffix;
@@ -101,17 +108,11 @@ function tct_title_case($title) {
     );
 }
 
-// Check if plugin should apply to this post type
-function tct_should_apply($post_id) {
-    $apply_to = get_option('tct_apply_to', 'all');
-
-    $post_type = get_post_type($post_id);
-
-    if ($apply_to === 'pages') {
-        return $post_type === 'page';
-    }
-
-    return in_array($post_type, ['post', 'page'], true);
+// Check if text is a dotted acronym (e.g., U.S.A., U.K., Ph.D.)
+function tct_is_dotted_acronym($word) {
+    // Pattern: Letter dot, repeated 2+ times, optionally ending with a letter or dot
+    // Matches: U.S.A., U.K., Ph.D., etc.
+    return preg_match('/^[A-Z]\.(?:[A-Z]\.)+$/u', $word);
 }
 
 // Check if text is an acronym (all caps, at least 2 letters)
@@ -126,6 +127,19 @@ function tct_filter_title($title, $post_id = 0) {
     }
 
     return tct_title_case($title);
+}
+
+// Check if plugin should apply to this post type
+function tct_should_apply($post_id) {
+    $apply_to = get_option('tct_apply_to', 'all');
+
+    $post_type = get_post_type($post_id);
+
+    if ($apply_to === 'pages') {
+        return $post_type === 'page';
+    }
+
+    return in_array($post_type, ['post', 'page'], true);
 }
 
 // Apply Title Case to headings (H1–H6)
@@ -274,6 +288,3 @@ add_filter('the_title', 'tct_filter_title', 10, 2);
 
 // Apply to page headings
 add_filter('the_content', 'tct_filter_headings');
-
-
-
