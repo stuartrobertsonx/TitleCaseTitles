@@ -109,9 +109,9 @@ function tct_title_case($title) {
 
 // Check if text is a dotted acronym (e.g., U.S.A., U.K., U.S., Ph.D.)
 function tct_is_dotted_acronym($word) {
-    // Pattern: Single letter followed by dot, repeated at least once, with optional trailing dot
-    // Matches: U.S., U.S.A., Ph.D., etc.
-    return preg_match('/^[A-Z]\.(?:[A-Z]\.)+$/u', $word);
+    // Pattern: Letter dot, at least 2 times, case-insensitive
+    // Matches: U.S., u.s., Ph.D., ph.d., U.S.A., etc.
+    return preg_match('/^[a-z]\.(?:[a-z]\.)+$/ui', $word);
 }
 
 // Check if text is an acronym (all caps, at least 2 letters)
