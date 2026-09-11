@@ -49,7 +49,7 @@ function tct_title_case($title) {
                 continue;
             }
 
-            $word_pattern = '/^([^\p{L}\p{N}]*)([\p{L}\p{N}]+)([^\p{L}\p{N}]*)$/u';
+            $word_pattern = '/^([^\p{L}\p{N}]*)([\p{L}\p{N}\']+)([^\p{L}\p{N}]*)$/u';
             preg_match($word_pattern, $subword, $matches);
 
             if (!$matches) {
